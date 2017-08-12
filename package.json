@@ -1,0 +1,16 @@
+{
+  "author": {
+    "name": "@naterchrdsn"
+  },
+  "dependencies": {},
+  "description": "adds rss feed related functionality to Kirbi",
+  "devDependencies": {},
+  "license": "Apache-2.0",
+  "name": "kirbi-rss",
+  "optionalDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Richardson-Media-House/kirbi-rss.git"
+  },
+  "version": "0.0.1"
+}
