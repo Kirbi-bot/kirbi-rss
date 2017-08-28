@@ -1,63 +1,73 @@
-const Kirbi = require('../../kirbi');
+const fs = require('fs');
+const FeedParser = require('feedparser');
+const feedparser = new FeedParser();
+const request = require('request');
 
-exports.commands = [
-	'rss'
-]
-
-try {
-	var rssFeeds = Kirbi.getJsonObject('/config/rss.json');
-} catch (err) {
-	Kirbi.logError(`Couldn't load rss.json. See rss.json.example if you want rss feed commands. error: ${err}`);
-}
-
-function loadFeeds() {
-	for (var cmd in rssFeeds) {
-		exports.commands.push(cmd);
-		exports[cmd] = {
-			usage: '[count]',
-			description: rssFeeds[cmd].description,
-			url: rssFeeds[cmd].url,
+module.exports = function (config, auth) {
+	let returnObject = {
+		commands: [ 'rss' ],
+		rss: {
+			description: 'Lists Available RSS Feeds',
 			process: function (msg, suffix, isEdit, cb) {
-				var count = 1;
-				if (suffix != null && suffix != "" && !isNaN(suffix)) {
-					count = suffix;
+				let output = '';
+				for (let c in rssFeeds) {
+					output += `${c}: ${rssFeeds[c].url}\n`;
 				}
-				rssfeed(msg, this.url, count, cb);
+				cb(`Available feeds:\n${output}`, msg);
 			}
-		};
-	}
-}
-
-loadFeeds();
-
-function rssfeed(msg, url, count, cb) {
-	var FeedParser = require('feedparser');
-	var feedparser = new FeedParser();
-	var request = require('request');
-	request(url).pipe(feedparser);
-	feedparser.on('error', function (error) {
-		cb(`Failed reading feed: ${error}`, msg);
-	});
-	var shown = 0;
-	feedparser.on('readable', function () {
-		var stream = this;
-		shown += 1
-		if (shown > count) {
-			return;
 		}
-		var item = stream.read();
-		cb(`${item.title} ${item.link}`, msg);
-		stream.alreadyRead = true;
-	});
-}
-
-exports.rss = {
-	description: 'Lists Available RSS Feeds',
-	process: function (msg, suffix, isEdit, cb) {
-		var output = '';
-		for (var c in rssFeeds) {
-			output += `${c}: ${rssFeeds[c].url}\n`;
+	};
+	function getFileContents (filePath) {
+		try {
+			return fs.readFileSync(path.join(path.dirname(require.main.filename), filePath), 'utf-8');
+		} catch (err) {
+			return '';
 		}
-		cb(`Available feeds:\n${output}`, msg);
 	}
-}
+	function getJsonObject (filePath) {
+		return JSON.parse(getFileContents(filePath));
+	}
+	function rssfeed(msg, url, count, cb) {
+		request(url).pipe(feedparser);
+		feedparser.on('error', function (error) {
+			cb(`Failed reading feed: ${error}`, msg);
+		});
+		let shown = 0;
+		feedparser.on('readable', function () {
+			let stream = this;
+			shown += 1
+			if (shown > count) {
+				return;
+			}
+			let item = stream.read();
+			cb(`${item.title} ${item.link}`, msg);
+			stream.alreadyRead = true;
+		});
+	}
+	function loadFeeds() {
+		for (let cmd in rssFeeds) {
+			returnObject.commands.push(cmd);
+			returnObject[cmd] = {
+				usage: '[count]',
+				description: rssFeeds[cmd].description,
+				url: rssFeeds[cmd].url,
+				process: function (msg, suffix, isEdit, cb) {
+					let count = 1;
+					if (suffix != null && suffix != "" && !isNaN(suffix)) {
+						count = suffix;
+					}
+					rssfeed(msg, this.url, count, cb);
+				}
+			};
+		}
+	}
+	loadFeeds();
+
+	try {
+		let rssFeeds = getJsonObject('../config/rss.json');
+	} catch (err) {
+		console.log(chalk.red(`Couldn't load rss.json. See rss.json.example if you want rss feed commands. error: ${err}`));
+	}
+	
+	return returnObject;
+};
