@@ -3,7 +3,7 @@ const FeedParser = require('feedparser');
 const feedparser = new FeedParser();
 const request = require('request');
 
-module.exports = function (config, auth) {
+module.exports = function (Kirbi) {
 	let returnObject = {
 		commands: [ 'rss' ],
 		rss: {
@@ -17,16 +17,6 @@ module.exports = function (config, auth) {
 			}
 		}
 	};
-	function getFileContents (filePath) {
-		try {
-			return fs.readFileSync(path.join(path.dirname(require.main.filename), filePath), 'utf-8');
-		} catch (err) {
-			return '';
-		}
-	}
-	function getJsonObject (filePath) {
-		return JSON.parse(getFileContents(filePath));
-	}
 	function rssfeed(msg, url, count, cb) {
 		request(url).pipe(feedparser);
 		feedparser.on('error', function (error) {
@@ -64,7 +54,7 @@ module.exports = function (config, auth) {
 	loadFeeds();
 
 	try {
-		let rssFeeds = getJsonObject('../config/rss.json');
+		let rssFeeds = Kirbi.getJsonObject('/config/rss.json');
 	} catch (err) {
 		console.log(chalk.red(`Couldn't load rss.json. See rss.json.example if you want rss feed commands. error: ${err}`));
 	}
