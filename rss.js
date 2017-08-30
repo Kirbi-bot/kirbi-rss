@@ -2,8 +2,10 @@ const fs = require('fs');
 const FeedParser = require('feedparser');
 const feedparser = new FeedParser();
 const request = require('request');
+const chalk = require('chalk');
 
 module.exports = function (Kirbi) {
+	let rssFeeds = Kirbi.getJsonObject('/config/rss.json');
 	let returnObject = {
 		commands: [ 'rss' ],
 		rss: {
@@ -17,23 +19,6 @@ module.exports = function (Kirbi) {
 			}
 		}
 	};
-	function rssfeed(msg, url, count, cb) {
-		request(url).pipe(feedparser);
-		feedparser.on('error', function (error) {
-			cb(`Failed reading feed: ${error}`, msg);
-		});
-		let shown = 0;
-		feedparser.on('readable', function () {
-			let stream = this;
-			shown += 1
-			if (shown > count) {
-				return;
-			}
-			let item = stream.read();
-			cb(`${item.title} ${item.link}`, msg);
-			stream.alreadyRead = true;
-		});
-	}
 	function loadFeeds() {
 		for (let cmd in rssFeeds) {
 			returnObject.commands.push(cmd);
@@ -51,13 +36,25 @@ module.exports = function (Kirbi) {
 			};
 		}
 	}
+	function rssfeed(msg, url, count, cb) {
+		request(url).pipe(feedparser);
+		feedparser.on('error', function (error) {
+			cb(`Failed reading feed: ${error}`, msg);
+		});
+		let shown = 0;
+		feedparser.on('readable', function () {
+			let stream = this;
+			shown += 1
+			if (shown > count) {
+				return;
+			}
+			let item = stream.read();
+			cb(`${item.title} ${item.link}`, msg);
+			stream.alreadyRead = true;
+		});
+	}
+
 	loadFeeds();
 
-	try {
-		let rssFeeds = Kirbi.getJsonObject('/config/rss.json');
-	} catch (err) {
-		console.log(chalk.red(`Couldn't load rss.json. See rss.json.example if you want rss feed commands. error: ${err}`));
-	}
-	
 	return returnObject;
 };
