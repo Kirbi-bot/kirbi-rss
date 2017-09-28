@@ -1,7 +1,7 @@
 const FeedParser = require('feedparser');
 const request = require('request');
 
-module.exports = function (Kirbi) {
+module.exports = Kirbi => {
 	const feedparser = new FeedParser();
 	const rssFeeds = Kirbi.getJsonObject('/config/rss.json');
 	const returnObject = {
